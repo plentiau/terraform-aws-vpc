@@ -817,12 +817,12 @@ resource "aws_subnet" "intra" {
 }
 
 resource "aws_route_table" "intra" {
-  count = local.create_intra_subnets ? 1 : 0
+  count = local.create_intra_subnets ? (var.intra_subnet_route_table_per_az ? length(var.azs) : 0) : 0
 
   vpc_id = local.vpc_id
 
   tags = merge(
-    { "Name" = "${var.name}-${var.intra_subnet_suffix}" },
+    { "Name" = var.intra_subnet_route_table_per_az ? "${var.name}-${var.intra_subnet_suffix}-${element(var.azs, count.index)}" : "${var.name}-${var.intra_subnet_suffix}" },
     var.tags,
     var.intra_route_table_tags,
   )
@@ -832,7 +832,7 @@ resource "aws_route_table_association" "intra" {
   count = local.create_intra_subnets ? local.len_intra_subnets : 0
 
   subnet_id      = element(aws_subnet.intra[*].id, count.index)
-  route_table_id = element(aws_route_table.intra[*].id, 0)
+  route_table_id = element(aws_route_table.intra[*].id, var.intra_subnet_route_table_per_az ? count.index : 0)
 }
 
 ################################################################################

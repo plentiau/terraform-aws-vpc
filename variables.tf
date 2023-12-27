@@ -956,6 +956,12 @@ variable "intra_route_table_tags" {
   default     = {}
 }
 
+variable "intra_subnet_route_table_per_az" {
+  description = "Create a route table per AZ for intra subnets"
+  type        = bool
+  default     = false
+}
+
 ################################################################################
 # Intra Network ACLs
 ################################################################################
