@@ -143,11 +143,9 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_route" "public_internet_gateway" {
-  for_each = {
-    for rt in aws_route_table.public[*] : rt.id => rt
-  }
+  count = local.create_public_subnets ? (var.public_subnet_route_table_per_az ? length(var.azs) : 1) : 0
 
-  route_table_id         = each.key
+  route_table_id         = aws_route_table.public[count.index].id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this[0].id
 
@@ -157,11 +155,9 @@ resource "aws_route" "public_internet_gateway" {
 }
 
 resource "aws_route" "public_internet_gateway_ipv6" {
-  for_each = {
-    for rt in aws_route_table.public[*] : rt.id => rt
-  }
+  count = local.create_public_subnets && var.enable_ipv6 ? (var.public_subnet_route_table_per_az ? length(var.azs) : 1) : 0
 
-  route_table_id              = each.key
+  route_table_id              = aws_route_table.public[count.index].id
   destination_ipv6_cidr_block = "::/0"
   gateway_id                  = aws_internet_gateway.this[0].id
 }
