@@ -124,12 +124,12 @@ resource "aws_subnet" "public" {
 }
 
 resource "aws_route_table" "public" {
-  count = local.create_public_subnets ? 1 : 0
+  count = local.create_public_subnets ? (var.public_subnet_route_table_per_az ? length(var.azs) : 1) : 0
 
   vpc_id = local.vpc_id
 
   tags = merge(
-    { "Name" = "${var.name}-${var.public_subnet_suffix}" },
+    { "Name" = var.public_subnet_route_table_per_az ? "${var.name}-${var.public_subnet_suffix}-${element(var.azs, count.index)}" : "${var.name}-${var.public_subnet_suffix}" },
     var.tags,
     var.public_route_table_tags,
   )
@@ -139,13 +139,15 @@ resource "aws_route_table_association" "public" {
   count = local.create_public_subnets ? local.len_public_subnets : 0
 
   subnet_id      = element(aws_subnet.public[*].id, count.index)
-  route_table_id = aws_route_table.public[0].id
+  route_table_id = element(aws_route_table.public[*].id, var.public_subnet_route_table_per_az ? count.index : 0)
 }
 
 resource "aws_route" "public_internet_gateway" {
-  count = local.create_public_subnets && var.create_igw ? 1 : 0
+  for_each = {
+    for rt in aws_route_table.public[*] : rt.id => rt
+  }
 
-  route_table_id         = aws_route_table.public[0].id
+  route_table_id         = each.key
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this[0].id
 
@@ -155,9 +157,11 @@ resource "aws_route" "public_internet_gateway" {
 }
 
 resource "aws_route" "public_internet_gateway_ipv6" {
-  count = local.create_public_subnets && var.create_igw && var.enable_ipv6 ? 1 : 0
+  for_each = {
+    for rt in aws_route_table.public[*] : rt.id => rt
+  }
 
-  route_table_id              = aws_route_table.public[0].id
+  route_table_id              = each.key
   destination_ipv6_cidr_block = "::/0"
   gateway_id                  = aws_internet_gateway.this[0].id
 }

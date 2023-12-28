@@ -250,6 +250,12 @@ variable "public_route_table_tags" {
   default     = {}
 }
 
+variable "public_subnet_route_table_per_az" {
+  description = "Create a route table per AZ for public subnets"
+  type        = bool
+  default     = false
+}
+
 ################################################################################
 # Public Network ACLs
 ################################################################################
